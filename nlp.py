@@ -1,9 +1,11 @@
-from nltk.corpus import stopwords
 import nltk
-from nltk.tokenize import word_tokenize, sent_tokenize
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
 from nltk.corpus import inaugural
 from nltk.stem import WordNetLemmatizer
+nltk.download('punkt')
 nltk.download('wordnet')
+nltk.download('stopwords')
 
 corpus = inaugural.raw('1789-Washington.txt')
 print(corpus)
