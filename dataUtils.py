@@ -3,13 +3,26 @@ import bert
 import nlp
 import tfidf
 
-dataset = pd.read_csv("./Datasets/FilmTVDataset/filmtv_movies - ENG.csv", nrows= 100)
-dataset.rename(columns={"filmtv_id":"id", "genre":"genres"}, inplace=True)
-# dataset = pd.read_csv("./Datasets/NetflixDataset/titles.csv")
-print('len before filtering: ' +str(len(dataset)))
-dataset = dataset[dataset['country'].str.contains("United States")]
-print('len after filtering: ' +str(len(dataset)))
+# # For FilmTV dataset
+# dataset = pd.read_csv("./Datasets/FilmTVDataset/filmtv_movies - ENG.csv", nrows= 100)
+# dataset.rename(columns={"filmtv_id":"id", "genre":"genres"}, inplace=True)
+# dataset = dataset[dataset['country'].str.contains("United States")]
+
+# For netflix dataset
+dataset = pd.read_csv("./Datasets/NetflixDataset/titles.csv")
 print(dataset.columns)
+print("\n")
+print('len before filtering: ' +str(len(dataset)))
+
+# edit id column to be autoincrement integers
+dataset['id']= pd.Series(range(1,dataset.shape[0]+1))
+
+# filter for movies
+dataset = dataset[dataset['type'] == "MOVIE"]
+
+# # filter for production countries to include US
+# dataset = dataset[dataset['production_countries'].str.contains("US")]
+print('len after filtering: ' +str(len(dataset)))
 print("\n")
 # print(dataset[dataset["filmtv_id"] == 18]["title"].values[0])
 

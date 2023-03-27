@@ -8,11 +8,12 @@ def getTitle(dataset, id):
     print("title for: ", str(id))
     return str(dataset[dataset["id"] == int(id)]["title"].values[0])
 
-movie_desc = "Diner"
+movie_desc = "Taxi Driver"
 def getRecommentdation(dataset):
     bert = SentenceTransformer("all-MiniLM-L6-v2")
     sentence_embeddings = bert.encode(dataset["combined_row"].tolist())
     similarity = cosine_similarity(sentence_embeddings)
+    print(list(enumerate(similarity[getId(dataset, movie_desc)])))
     movie_reccomendation = sorted(list(enumerate(similarity[getId(dataset, movie_desc)])), key = lambda x:x[1], reverse = True)
     # print(movie_reccomendation[1][0], movie_reccomendation[2][0], movie_reccomendation[3][0])
     recommendationNumber = 1
