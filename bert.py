@@ -2,12 +2,11 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
 def getId(dataset, title):
-    return dataset[dataset.title == title]["filmtv_id"].values[0]
+    return dataset[dataset.title == title]["id"].values[0]
 
-def getTitle(dataset, filmtv_id):
-    print("title for: ", str(filmtv_id))
-    # print(dataset[dataset["filmtv_id"] == 18]["title"].values[0])
-    return str(dataset[dataset["filmtv_id"] == int(filmtv_id)]["title"].values[0])
+def getTitle(dataset, id):
+    print("title for: ", str(id))
+    return str(dataset[dataset["id"] == int(id)]["title"].values[0])
 
 movie_desc = "Diner"
 def getRecommentdation(dataset):
