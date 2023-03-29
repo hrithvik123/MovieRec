@@ -40,5 +40,5 @@ dataset['combined_row'] = dataset.apply(combine_row, axis=1)
 stringFor202StormCenter = "Alicia Hull (Davis) refuses to remove a pro-Communist book from the library where she works. We are in the deep province of America and it doesn't take long for the library to burn down in retaliation, but she holds out."
 
 # bert.getRecommentdation(dataset)
-tfidf.extractQuery(dataset, stringFor202StormCenter)
-# word2vec.getWord2Vec(dataset['combined_row'].tolist())
+# tfidf.extractQuery(dataset, stringFor202StormCenter)
+word2vec.getWord2Vec(dataset['combined_row'].tolist())

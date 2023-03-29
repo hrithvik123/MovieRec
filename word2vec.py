@@ -17,7 +17,7 @@ warnings.filterwarnings(action = 'ignore')
 # 	model2.wv.similarity('alice', 'machines'))
 
 def getWord2Vec(sentences):
-	print(sentences)
 	model = Word2Vec(sentences, min_count=1)
+	# print(model.vocab)
 	# print(model.wv.most_similar("A", topn=10))
 	return model
