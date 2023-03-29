@@ -3,6 +3,7 @@
 # importing all necessary modules
 import gensim
 from gensim.models import Word2Vec
+import warnings
 
 warnings.filterwarnings(action = 'ignore')
 
