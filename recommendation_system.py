@@ -16,7 +16,7 @@ bert_model = BertModel.from_pretrained("bert-base-uncased")
 
 # 1. Preprocessing and word segmentation
 def preprocess(text):
-    tokens = word_tokenize(text.lower())
+    tokens = word_tokenize(str(text).lower())
     lemmatized_tokens = [lemmatizer.lemmatize(token) for token in tokens]
     return lemmatized_tokens
 
@@ -58,23 +58,35 @@ def generate_ranking(query_terms, movies_data, kmeans):
 
 # Read the CSV file
 csv_file = "./Datasets/NetflixDataset/titles.csv"
-movies_data = pd.read_csv(csv_file, nrows=10)
+movies_data = pd.read_csv(csv_file)
+# edit id column to be autoincrement integers
+movies_data['id']= pd.Series(range(1,movies_data.shape[0]+1))
+print("\n")
+print('len before filtering: ' +str(len(movies_data)))
+# filter for movies
+movies_data = movies_data[movies_data['type'] == "MOVIE"]
+print('len after filtering: ' +str(len(movies_data)))
+print("\n")
 
-# Preprocess the descriptions
-movies_data["tokens"] = movies_data["description"].apply(preprocess)
+def getRecommendations(movies_data, queryDesc):
 
-# Get embeddings for descriptions
-movies_data["embeddings"] = movies_data["tokens"].apply(get_embeddings)
-movies_data["embeddings"] = movies_data["embeddings"].apply(lambda x: x.reshape(-1))
+    # Preprocess the descriptions
+    movies_data["tokens"] = movies_data["description"].apply(preprocess)
 
-# Cluster embeddings
-all_embeddings = np.vstack(movies_data["embeddings"].values)
-kmeans = cluster_embeddings(all_embeddings)
-movies_data["cluster"] = kmeans.labels_
+    # Get embeddings for descriptions
+    movies_data["embeddings"] = movies_data["tokens"].apply(get_embeddings)
+    movies_data["embeddings"] = movies_data["embeddings"].apply(lambda x: x.reshape(-1))
 
-# Example usage
-input_description = "A thrilling adventure with epic battles and unforgettable characters."
-query_terms = extract_query_terms([input_description])
+    # Cluster embeddings
+    all_embeddings = np.vstack(movies_data["embeddings"].values)
+    kmeans = cluster_embeddings(all_embeddings)
+    movies_data["cluster"] = kmeans.labels_
 
-ranking = generate_ranking(query_terms, movies_data, kmeans)
-print(ranking)
+    # Example usage
+    query_terms = extract_query_terms([queryDesc])
+
+    ranking = generate_ranking(query_terms, movies_data, kmeans)
+    print(ranking.head(5))
+
+input_description = "A war veteran who is mentally unstable works as a taxi driver in New York City."
+getRecommendations(movies_data, input_description)
