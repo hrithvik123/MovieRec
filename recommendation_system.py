@@ -58,7 +58,7 @@ def generate_ranking(query_terms, movies_data, kmeans):
 
 # Read the CSV file
 csv_file = "./Datasets/NetflixDataset/titles.csv"
-movies_data = pd.read_csv(csv_file, nrows=100)
+movies_data = pd.read_csv(csv_file, nrows=10)
 
 # Preprocess the descriptions
 movies_data["tokens"] = movies_data["description"].apply(preprocess)
@@ -70,6 +70,7 @@ movies_data["embeddings"] = movies_data["embeddings"].apply(lambda x: x.reshape(
 # Cluster embeddings
 all_embeddings = np.vstack(movies_data["embeddings"].values)
 kmeans = cluster_embeddings(all_embeddings)
+movies_data["cluster"] = kmeans.labels_
 
 # Example usage
 input_description = "A thrilling adventure with epic battles and unforgettable characters."
