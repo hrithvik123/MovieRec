@@ -1,11 +1,11 @@
+import pandas as pd
+import numpy as np
+from sklearn.cluster import KMeans
+from sklearn.feature_extraction.text import TfidfVectorizer
 import nltk
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 from transformers import BertModel, BertTokenizer
-from sklearn.cluster import KMeans
-from sklearn.feature_extraction.text import TfidfVectorizer
-import numpy as np
-import pandas as pd
 
 # Initialize required modules
 nltk.download("punkt")
@@ -21,8 +21,9 @@ def preprocess(text):
     return lemmatized_tokens
 
 # 2. Word/actor embedding learning
-def get_embeddings(text):
-    input_ids = tokenizer(text, return_tensors="pt")["input_ids"]
+def get_embeddings(tokens):
+    text = " ".join(tokens)
+    input_ids = tokenizer(text, return_tensors="pt", padding=True, truncation=True)["input_ids"]
     outputs = bert_model(input_ids)
     embeddings = outputs.last_hidden_state[:, 0, :].detach().numpy()
     return embeddings
@@ -34,52 +35,45 @@ def cluster_embeddings(embeddings, n_clusters=5):
     return kmeans
 
 # 4. Query extraction using TF-IDF
-def extract_query_terms(texts, min_df=0.1, max_df=0.9):
-    vectorizer = TfidfVectorizer(min_df=min_df, max_df=max_df)
+def extract_query_terms(texts):
+    vectorizer = TfidfVectorizer()
     vectorizer.fit_transform(texts)
-    query_terms = vectorizer.get_feature_names()
+    query_terms = vectorizer.get_feature_names_out()
     return query_terms
 
 # 5. Ranking generation
-def generate_ranking(query_terms, actors_data, kmeans):
+def generate_ranking(query_terms, movies_data, kmeans):
     query_embeddings = get_embeddings(query_terms)
     cluster_label = kmeans.predict(query_embeddings)[0]
-    actors_in_cluster = actors_data[actors_data["cluster"] == cluster_label]
+    movies_in_cluster = movies_data[movies_data["cluster"] == cluster_label]
 
-    def score(actor_embeddings, query_embeddings):
-        return np.dot(actor_embeddings, query_embeddings.T).sum()
+    def score(movie_embeddings, query_embeddings):
+        return np.dot(movie_embeddings, query_embeddings.T).sum()
 
-    actors_in_cluster["score"] = actors_in_cluster["embeddings"].apply(
+    movies_in_cluster["score"] = movies_in_cluster["embeddings"].apply(
         lambda x: score(x, query_embeddings)
     )
-    ranking = actors_in_cluster.sort_values(by="score", ascending=False)
+    ranking = movies_in_cluster.sort_values(by="score", ascending=False)
     return ranking
 
+# Read the CSV file
+csv_file = "./Datasets/NetflixDataset/titles.csv"
+movies_data = pd.read_csv(csv_file, nrows=100)
+
+# Preprocess the descriptions
+movies_data["tokens"] = movies_data["description"].apply(preprocess)
+
+# Get embeddings for descriptions
+movies_data["embeddings"] = movies_data["tokens"].apply(get_embeddings)
+movies_data["embeddings"] = movies_data["embeddings"].apply(lambda x: x.reshape(-1))
+
+# Cluster embeddings
+all_embeddings = np.vstack(movies_data["embeddings"].values)
+kmeans = cluster_embeddings(all_embeddings)
+
 # Example usage
-actor_descriptions = [
-    "Actor 1 description",
-    "Actor 2 description",
-    "Actor 3 description",
-    # Add more actor descriptions
-]
+input_description = "A thrilling adventure with epic battles and unforgettable characters."
+query_terms = extract_query_terms([input_description])
 
-actors_data = pd.DataFrame(
-    {
-        "actor": [f"Actor {i+1}" for i in range(len(actor_descriptions))],
-        "description": actor_descriptions
-    }
-)
-
-def getRecommendations(dataset, queryDescription):
-    dataset["tokens"] = dataset["combined_row"].apply(preprocess)
-    dataset["embeddings"] = dataset["tokens"].apply(get_embeddings)
-    dataset["embeddings"] = dataset["embeddings"].apply(lambda x: x.reshape(-1))
-
-    all_embeddings = np.vstack(dataset["embeddings"].values)
-    kmeans = cluster_embeddings(all_embeddings)
-
-    input_role_description = "The role requires a strong character with great leadership."
-    query_terms = extract_query_terms([queryDescription])
-
-    ranking = generate_ranking(query_terms, dataset["combined_row"].tolist(), kmeans)
-    print(ranking)
+ranking = generate_ranking(query_terms, movies_data, kmeans)
+print(ranking)
