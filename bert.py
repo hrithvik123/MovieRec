@@ -8,10 +8,16 @@ def getTitle(dataset, id):
     print("title for: ", str(id))
     return str(dataset[dataset["id"] == int(id)]["title"].values[0])
 
-movie_desc = "Taxi Driver"
-def getRecommentdation(dataset):
+
+def getBertEmbeddings(dataset):
     bert = SentenceTransformer("all-MiniLM-L6-v2")
     sentence_embeddings = bert.encode(dataset["combined_row"].tolist())
+    getRecommentdation(dataset, sentence_embeddings)
+    return sentence_embeddings
+
+movie_desc = "Taxi Driver"
+
+def getRecommentdation(dataset, sentence_embeddings):
     similarity = cosine_similarity(sentence_embeddings)
     print(list(enumerate(similarity[getId(dataset, movie_desc)])))
     movie_reccomendation = sorted(list(enumerate(similarity[getId(dataset, movie_desc)])), key = lambda x:x[1], reverse = True)
@@ -27,3 +33,4 @@ def getRecommentdation(dataset):
             print("An exception occurred for: " +str(recommendationNumber))
         recommendationNumber += 1
     # print(getTitle(int(movie_reccomendation[1][0])), getTitle(int(movie_reccomendation[2][0])), getTitle(int(movie_reccomendation[3][0])), sep = "\n")
+    return sentence_embeddings
