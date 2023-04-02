@@ -3,6 +3,8 @@ import bert
 import nlp
 import tfidf
 import word2vec
+import kmeans
+import recommendation_system
 
 # # For FilmTV dataset
 # dataset = pd.read_csv("./Datasets/FilmTVDataset/filmtv_movies - ENG.csv", nrows= 100)
@@ -39,6 +41,9 @@ dataset['combined_row'] = dataset.apply(combine_row, axis=1)
 
 stringFor202StormCenter = "Alicia Hull (Davis) refuses to remove a pro-Communist book from the library where she works. We are in the deep province of America and it doesn't take long for the library to burn down in retaliation, but she holds out."
 
-# bert.getRecommentdation(dataset)
+# bert_embeddings = bert.getBertEmbeddings(dataset)
+# clustered_embeddings = kmeans.performClustering(bert_embeddings)
 # tfidf.extractQuery(dataset, stringFor202StormCenter)
-word2vec.getWord2Vec(dataset['combined_row'].tolist())
+# w2v_embeddings = word2vec.getWord2Vec(dataset['combined_row'].tolist())
+
+recommendation_system.getRecommendations(dataset, stringFor202StormCenter)
