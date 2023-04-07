@@ -5,14 +5,14 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 import nltk
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
-from transformers import BertModel, BertTokenizer
+from transformers import AutoModel, AutoTokenizer
 
 # Initialize required modules
 nltk.download("punkt")
 nltk.download("wordnet")
 lemmatizer = WordNetLemmatizer()
-tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
-bert_model = BertModel.from_pretrained("bert-base-uncased")
+tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/distilbert-base-nli-mean-tokens")
+bert_model = AutoModel.from_pretrained("sentence-transformers/distilbert-base-nli-mean-tokens")
 
 # 1. Preprocessing and word segmentation
 def preprocess(text):
@@ -26,10 +26,10 @@ def get_embeddings(tokens):
     input_ids = tokenizer(text, return_tensors="pt", padding=True, truncation=True)["input_ids"]
     outputs = bert_model(input_ids)
     embeddings = outputs.last_hidden_state[:, 0, :].detach().numpy()
-    return embeddings
+    return embeddings[:, :128]  # Limit dimensionality to 128
 
 # 3. Embedding clustering
-def cluster_embeddings(embeddings, n_clusters=5):
+def cluster_embeddings(embeddings, n_clusters=30):
     kmeans = KMeans(n_clusters=n_clusters, random_state=42)
     kmeans.fit(embeddings)
     return kmeans
@@ -42,7 +42,7 @@ def extract_query_terms(texts):
     return query_terms
 
 # 5. Ranking generation
-def generate_ranking(query_terms, movies_data, kmeans):
+def generate_ranking(query_terms, movies_data, kmeans, top_n=10):
     query_embeddings = get_embeddings(query_terms)
     cluster_label = kmeans.predict(query_embeddings)[0]
     movies_in_cluster = movies_data[movies_data["cluster"] == cluster_label]
@@ -54,39 +54,66 @@ def generate_ranking(query_terms, movies_data, kmeans):
         lambda x: score(x, query_embeddings)
     )
     ranking = movies_in_cluster.sort_values(by="score", ascending=False)
-    return ranking
+    return ranking.head(top_n)
+
+# Calculate Mean Average Precision (MAP)
+def evaluate(recommendation_system, test_data, k=10):
+    total_map = 0.0
+    total_queries = 0
+
+    for index, row in test_data.iterrows():
+        input_description = row['description']
+        ground_truth_title = row['title']
+
+        recommendations = recommendation_system(input_description)
+        titles = recommendations['title'].head(k).tolist()
+
+        relevant_count = 0
+        average_precision = 0.0
+
+        for i, title in enumerate(titles):
+            if title == ground_truth_title:
+                relevant_count += 1
+                average_precision += relevant_count / (i + 1)
+
+        average_precision /= min(k, 1)
+        total_map += average_precision
+        total_queries += 1
+
+    mean_average_precision = total_map / total_queries
+    return mean_average_precision
+
 
 # Read the CSV file
 csv_file = "./Datasets/NetflixDataset/titles.csv"
 movies_data = pd.read_csv(csv_file)
-# edit id column to be autoincrement integers
-movies_data['id']= pd.Series(range(1,movies_data.shape[0]+1))
-print("\n")
-print('len before filtering: ' +str(len(movies_data)))
-# filter for movies
-movies_data = movies_data[movies_data['type'] == "MOVIE"]
-print('len after filtering: ' +str(len(movies_data)))
-print("\n")
 
-def getRecommendations(movies_data, queryDesc):
+# Preprocessing
+movies_data["tokens"] = movies_data["description"].apply(preprocess)
+movies_data["embeddings"] = movies_data["tokens"].apply(get_embeddings)
+movies_data["embeddings"] = movies_data["embeddings"].apply(lambda x: x.reshape(-1))
 
-    # Preprocess the descriptions
-    movies_data["tokens"] = movies_data["description"].apply(preprocess)
+# Cluster embeddings
+all_embeddings = np.vstack(movies_data["embeddings"].values)
+kmeans = cluster_embeddings(all_embeddings)
+movies_data["cluster"] = kmeans.labels_
 
-    # Get embeddings for descriptions
-    movies_data["embeddings"] = movies_data["tokens"].apply(get_embeddings)
-    movies_data["embeddings"] = movies_data["embeddings"].apply(lambda x: x.reshape(-1))
+# Example usage
+input_description = "The movie depicts the life of a young boy, Vijay (Amitabh Bachchan), whose father gets brutally lynched by a mobster Kancha Cheena. It's a journey of his quest for revenge, which leads him to become a gangster as an adult. Watch out for Amitabh Bachchan in one of the most powerful roles of his career. Will Vijay lose his family in the process of satisfying his vengeance?"
+query_terms = extract_query_terms([input_description])
 
-    # Cluster embeddings
-    all_embeddings = np.vstack(movies_data["embeddings"].values)
-    kmeans = cluster_embeddings(all_embeddings)
-    movies_data["cluster"] = kmeans.labels_
+ranking = generate_ranking(query_terms, movies_data, kmeans, top_n=10)
+print(ranking[["title", "score"]])
 
-    # Example usage
-    query_terms = extract_query_terms([queryDesc])
+# For demonstration purposes, we create a mock ground truth dataset
+ground_truth = ["Taxi Driver", "Raging Bull", "Goodfellas", "The Deer Hunter", "The Godfather"]
 
-    ranking = generate_ranking(query_terms, movies_data, kmeans)
-    print(ranking.head(5))
+# Convert the ground truth titles to their corresponding ids
+ground_truth_ids = ranking[ranking["title"].isin(ground_truth)]["id"].tolist()
 
-input_description = "A war veteran who is mentally unstable works as a taxi driver in New York City."
-getRecommendations(movies_data, input_description)
+# Get the top 10 predicted movie ids
+predicted_ids = ranking["id"].head(10).tolist()
+
+# Calculate Mean Average Precision (MAP)
+map_score = evaluate(predicted_ids, ground_truth_ids)
+print("Mean Average Precision (MAP):", map_score)
