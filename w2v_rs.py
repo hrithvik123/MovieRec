@@ -60,15 +60,6 @@ def cluster_embeddings(embeddings, n_clusters=30):
 
 # 4. Query extraction using TF-IDF
 def extract_query_terms(texts):
-    # # Preprocess texts: tokenize, remove stopwords, and remove punctuation
-    # preprocessed_texts = [
-    #     [word for word in word_tokenize(text.lower()) if word not in stop_words and word not in punctuation]
-    #     for text in texts
-    # ]
-
-    # # Join the preprocessed words back into sentences
-    # preprocessed_texts = [" ".join(words) for words in preprocessed_texts]
-
     vectorizer = TfidfVectorizer()
     vectorizer.fit_transform(texts)
     query_terms = vectorizer.get_feature_names_out()
