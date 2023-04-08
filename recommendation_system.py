@@ -140,7 +140,7 @@ def rs_multiple_tests():
     test_sizes = [10, 100, 1000, 3000]
     results = {}
     for test_size in test_sizes:
-        print("Being Testing with size : ", test_size)
+        print("Begin Testing with size : ", test_size)
         results[str(test_size)] = bert_recommendation_system_test(test_size)
 
     print("\nUSING FILE ", csv_file, "FOR INPUT AND TEST DATA:")
