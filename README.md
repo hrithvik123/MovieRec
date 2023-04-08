@@ -7,3 +7,4 @@ pip3 install transformers
 pip3 install scikit-learn
 pip3 install pandas
 pip3 install torch torchvision torchaudio
+pip install gensim
