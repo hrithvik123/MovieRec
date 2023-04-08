@@ -7,6 +7,9 @@ from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 import gensim.downloader as api
 import numpy as np
+from nltk.corpus import stopwords
+from string import punctuation
+import re
 
 # Utility function to get a list of movie ids matching a given input description. 
 # This list would be used as ground truth since we are testing with the same data that is a part of out training dataset
@@ -17,10 +20,19 @@ def getGroundTruth(dataset, desc):
 # Initialize required modules
 nltk.download("punkt")
 nltk.download("wordnet")
+nltk.download("stopwords")
+stop_words = set(stopwords.words("english"))
 lemmatizer = WordNetLemmatizer()
 
 # Load the Google News 300 pretrained Word2Vec model
 w2v_model = api.load("word2vec-google-news-300")
+
+# method that checks if a given description contains more than just digits, punctuation and stop words
+# description is consider meaningful if true 
+def is_meaningful(description):
+    words = re.findall(r'\w+', description.lower())
+    meaningful_words = [word for word in words if word not in stop_words and word.isalpha()]
+    return len(meaningful_words) > 0
 
 # 1. Preprocessing and word segmentation
 def preprocess(text):
@@ -48,8 +60,17 @@ def cluster_embeddings(embeddings, n_clusters=30):
 
 # 4. Query extraction using TF-IDF
 def extract_query_terms(texts):
+    # Preprocess texts: tokenize, remove stopwords, and remove punctuation
+    preprocessed_texts = [
+        [word for word in word_tokenize(text.lower()) if word not in stop_words and word not in punctuation]
+        for text in texts
+    ]
+
+    # Join the preprocessed words back into sentences
+    preprocessed_texts = [" ".join(words) for words in preprocessed_texts]
+
     vectorizer = TfidfVectorizer()
-    vectorizer.fit_transform(texts)
+    vectorizer.fit_transform(preprocessed_texts)
     query_terms = vectorizer.get_feature_names_out()
     return query_terms
 
@@ -98,6 +119,10 @@ print("number of rows in csv: ", len(movies_data))
 # only keep rows where description is not empty.
 movies_data = movies_data[movies_data['description'].notna()]
 
+# only keep rows with meaningful descriptions, i.e.,
+# rows with more than just punctuation, digits and stopwords.
+movies_data = movies_data[movies_data['description'].apply(is_meaningful)]
+
 # edit id column to be autoincrement integers
 movies_data['id']= pd.Series(range(1,movies_data.shape[0]+1))
 
@@ -109,7 +134,7 @@ movies_data["embeddings"] = movies_data["tokens"].apply(get_embeddings)
 movies_data["embeddings"] = movies_data["embeddings"].apply(lambda x: x.reshape(-1))
 
 # Cluster embeddings
-all_embeddings = np.vstack(movies_data["embeddings"].values)
+all_embeddings = np.vstack(movies_data["embeddings"].values).astype(np.float32)
 kmeans = cluster_embeddings(all_embeddings)
 movies_data["cluster"] = kmeans.labels_
 
