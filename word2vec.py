@@ -138,7 +138,7 @@ def w2v_recommendation_system_test(test_data_size = 10):
         total_precision += map_score
         movies_data.loc[movies_data["description"] == test_description, "precision"] = map_score
 
-    print("MEAN PRECISION OF THE SYSTEM ON USING FIRST  ", test_data_size ," ROWS AS TEST DATA = ", total_precision/test_data_size)
+    print("MEAN PRECISION OF THE WORD2VEC SYSTEM ON USING FIRST ", test_data_size ," ROWS AS TEST DATA = ", total_precision/test_data_size)
     
     # If you want to check the intermediate outputs of all 5 steps and the precision, you can output movies_data to csv
     # Uncomment the line below to export to csv
