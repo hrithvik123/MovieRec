@@ -82,14 +82,18 @@ def evaluate(recommendation_system, test_data):
 
 test_description = "The movie depicts the life of a young boy, Vijay (Amitabh Bachchan), whose father gets brutally lynched by a mobster Kancha Cheena. It's a journey of his quest for revenge, which leads him to become a gangster as an adult. Watch out for Amitabh Bachchan in one of the most powerful roles of his career. Will Vijay lose his family in the process of satisfying his vengeance?"
 
-# Read the CSV file
+# Read and filter the Netflix dataset CSV
 csv_file = "./Datasets/NetflixDataset/titles.csv"
 movies_data = pd.read_csv(csv_file)
-
-print("number of rows in csv: ", len(movies_data))
-
 # filter for movies
 movies_data = movies_data[movies_data['type'] == "MOVIE"]
+
+# # Read and modify the FilmTV dataset CSV
+# csv_file = "./Datasets/FilmTVDataset/filmtv_movies - ENG.csv"
+# movies_data = pd.read_csv(csv_file)
+# movies_data.rename(columns={"filmtv_id":"id"}, inplace=True)
+
+print("number of rows in csv: ", len(movies_data))
 
 # only keep rows where description is not empty.
 movies_data = movies_data[movies_data['description'].notna()]
@@ -99,16 +103,17 @@ movies_data['id']= pd.Series(range(1,movies_data.shape[0]+1))
 
 print("number of movies in csv: ", len(movies_data))
 
-def w2v_recommendation_system_test(test_data_size = 10):
-    # Preprocessing
-    movies_data["tokens"] = movies_data["description"].apply(preprocess)
-    movies_data["embeddings"] = movies_data["tokens"].apply(get_embeddings)
-    movies_data["embeddings"] = movies_data["embeddings"].apply(lambda x: x.reshape(-1))
+# Preprocessing
+movies_data["tokens"] = movies_data["description"].apply(preprocess)
+movies_data["embeddings"] = movies_data["tokens"].apply(get_embeddings)
+movies_data["embeddings"] = movies_data["embeddings"].apply(lambda x: x.reshape(-1))
 
-    # Cluster embeddings
-    all_embeddings = np.vstack(movies_data["embeddings"].values)
-    kmeans = cluster_embeddings(all_embeddings)
-    movies_data["cluster"] = kmeans.labels_
+# Cluster embeddings
+all_embeddings = np.vstack(movies_data["embeddings"].values)
+kmeans = cluster_embeddings(all_embeddings)
+movies_data["cluster"] = kmeans.labels_
+
+def w2v_recommendation_system_test(test_data_size = 10):
 
     # if the size of test data provided is greater than total rows in csv, update it.
     test_data_size = len(movies_data) if len(movies_data) < test_data_size else test_data_size
