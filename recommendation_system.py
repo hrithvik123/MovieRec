@@ -135,7 +135,7 @@ def run_recommendation_system_test(test_data_size = 10):
     
     # If you want to check the intermediate outputs of all 5 steps and the precision, you can output movies_data to csv
     # Uncomment the line below to export to csv
-    # movies_data.to_csv("movies_data.csv")
+    # movies_data.to_csv("movies_data_bert.csv")
     
 run_recommendation_system_test(1000)
 
