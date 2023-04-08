@@ -7,6 +7,12 @@ from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 from transformers import AutoModel, AutoTokenizer
 
+# Utility function to get a list of movie ids matching a given input description. 
+# This list would be used as ground truth since we are testing with the same data that is a part of out training dataset
+def getGroundTruth(dataset, desc):
+    # print(dataset[dataset["description"] == desc]["title"].values)
+    return dataset[dataset["description"] == desc]["id"].values
+
 # Initialize required modules
 nltk.download("punkt")
 nltk.download("wordnet")
@@ -57,63 +63,77 @@ def generate_ranking(query_terms, movies_data, kmeans, top_n=10):
     return ranking.head(top_n)
 
 # Calculate Mean Average Precision (MAP)
-def evaluate(recommendation_system, test_data, k=10):
-    total_map = 0.0
-    total_queries = 0
+def evaluate(recommendation_system, test_data):
+    total_correct = 0
 
-    for index, row in test_data.iterrows():
-        input_description = row['description']
-        ground_truth_title = row['title']
+    for id in recommendation_system:
+        if(id in test_data):
+            total_correct += 1
 
-        recommendations = recommendation_system(input_description)
-        titles = recommendations['title'].head(k).tolist()
+    precision = total_correct / len(recommendation_system)
+    return precision
 
-        relevant_count = 0
-        average_precision = 0.0
-
-        for i, title in enumerate(titles):
-            if title == ground_truth_title:
-                relevant_count += 1
-                average_precision += relevant_count / (i + 1)
-
-        average_precision /= min(k, 1)
-        total_map += average_precision
-        total_queries += 1
-
-    mean_average_precision = total_map / total_queries
-    return mean_average_precision
-
+test_description = "The movie depicts the life of a young boy, Vijay (Amitabh Bachchan), whose father gets brutally lynched by a mobster Kancha Cheena. It's a journey of his quest for revenge, which leads him to become a gangster as an adult. Watch out for Amitabh Bachchan in one of the most powerful roles of his career. Will Vijay lose his family in the process of satisfying his vengeance?"
 
 # Read the CSV file
 csv_file = "./Datasets/NetflixDataset/titles.csv"
 movies_data = pd.read_csv(csv_file)
 
-# Preprocessing
-movies_data["tokens"] = movies_data["description"].apply(preprocess)
-movies_data["embeddings"] = movies_data["tokens"].apply(get_embeddings)
-movies_data["embeddings"] = movies_data["embeddings"].apply(lambda x: x.reshape(-1))
+print("number of rows in csv: ", len(movies_data))
 
-# Cluster embeddings
-all_embeddings = np.vstack(movies_data["embeddings"].values)
-kmeans = cluster_embeddings(all_embeddings)
-movies_data["cluster"] = kmeans.labels_
+# filter for movies
+movies_data = movies_data[movies_data['type'] == "MOVIE"]
 
-# Example usage
-input_description = "The movie depicts the life of a young boy, Vijay (Amitabh Bachchan), whose father gets brutally lynched by a mobster Kancha Cheena. It's a journey of his quest for revenge, which leads him to become a gangster as an adult. Watch out for Amitabh Bachchan in one of the most powerful roles of his career. Will Vijay lose his family in the process of satisfying his vengeance?"
-query_terms = extract_query_terms([input_description])
+# edit id column to be autoincrement integers
+movies_data['id']= pd.Series(range(1,movies_data.shape[0]+1))
 
-ranking = generate_ranking(query_terms, movies_data, kmeans, top_n=10)
-print(ranking[["title", "score"]])
+print("number of movies in csv: ", len(movies_data))
 
-# For demonstration purposes, we create a mock ground truth dataset
-ground_truth = ["Taxi Driver", "Raging Bull", "Goodfellas", "The Deer Hunter", "The Godfather"]
+def run_recommendation_system_test(test_data_size = 10):
+    # Preprocessing
+    movies_data["tokens"] = movies_data["description"].apply(preprocess)
+    movies_data["embeddings"] = movies_data["tokens"].apply(get_embeddings)
+    movies_data["embeddings"] = movies_data["embeddings"].apply(lambda x: x.reshape(-1))
 
-# Convert the ground truth titles to their corresponding ids
-ground_truth_ids = ranking[ranking["title"].isin(ground_truth)]["id"].tolist()
+    # Cluster embeddings
+    all_embeddings = np.vstack(movies_data["embeddings"].values)
+    kmeans = cluster_embeddings(all_embeddings)
+    movies_data["cluster"] = kmeans.labels_
 
-# Get the top 10 predicted movie ids
-predicted_ids = ranking["id"].head(10).tolist()
+    # if the size of test data provided is greater than total rows in csv, update it.
+    test_data_size = len(movies_data) if len(movies_data) < test_data_size else test_data_size
+    
+    # For every query, we calculate precision and then we find the average precision for the queries.
+    # Declare a variable to keep track of total precision after each query.
+    total_precision = 0
 
-# Calculate Mean Average Precision (MAP)
-map_score = evaluate(predicted_ids, ground_truth_ids)
-print("Mean Average Precision (MAP):", map_score)
+    # Example usage
+    for description in movies_data.head(test_data_size)["description"].values:
+        test_description = description
+        query_terms = extract_query_terms([test_description])
+
+        ranking = generate_ranking(query_terms, movies_data, kmeans, top_n=1)
+        print(ranking[["title", "score"]])
+
+        ground_truth = getGroundTruth(movies_data, test_description)
+
+        # Convert the ground truth titles to their corresponding ids
+        # ground_truth_ids = ground_truth["id"].values
+
+        # Get the top predicted movie ids
+        predicted_ids = ranking["id"].values
+
+        # Calculate Mean Average Precision (MAP)
+        map_score = evaluate(predicted_ids, ground_truth)
+        total_precision += map_score
+        movies_data.loc[movies_data["description"] == test_description, "precision"] = map_score
+
+    print("MEAN PRECISION OF THE SYSTEM ON USING FIRST  ", test_data_size ," ROWS AS TEST DATA = ", total_precision/test_data_size)
+    
+    # If you want to check the intermediate outputs of all 5 steps and the precision, you can output movies_data to csv
+    # Uncomment the line below to export to csv
+    # movies_data.to_csv("movies_data.csv")
+    
+run_recommendation_system_test(1000)
+
+# print(getGroundTruth(movies_data, test_description))
