@@ -138,12 +138,22 @@ def w2v_recommendation_system_test(test_data_size = 10):
         total_precision += map_score
         movies_data.loc[movies_data["description"] == test_description, "precision"] = map_score
 
-    print("MEAN PRECISION OF THE WORD2VEC SYSTEM ON USING FIRST ", test_data_size ," ROWS AS TEST DATA = ", total_precision/test_data_size)
+    return total_precision/test_data_size
+    
+# Method that runs multiple tests on our recommendation system
+def rs_multiple_tests():
+    test_sizes = [10, 100, 1000, 3000]
+    results = {}
+    for test_size in test_sizes:
+        print("Begin testing with size : ", test_size)
+        results[str(test_size)] = w2v_recommendation_system_test(test_size)
+
+    print("\nUSING FILE ", csv_file, "FOR INPUT AND TEST DATA:")
+    for test_size in test_sizes:
+        print("TESTING THE WORD2VEC SYSTEM ON FIRST", test_size, " ROWS. MEAN PRECISION =", results[str(test_size)])
     
     # If you want to check the intermediate outputs of all 5 steps and the precision, you can output movies_data to csv
     # Uncomment the line below to export to csv
-    # movies_data.to_csv("movies_data_w2v.csv")
-    
-w2v_recommendation_system_test(1000)
+    # movies_data.to_csv("movies_data_bert.csv")
 
-# print(getGroundTruth(movies_data, test_description))
+rs_multiple_tests()
