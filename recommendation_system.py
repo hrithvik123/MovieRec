@@ -84,6 +84,9 @@ print("number of rows in csv: ", len(movies_data))
 # filter for movies
 movies_data = movies_data[movies_data['type'] == "MOVIE"]
 
+# only keep rows where description is not empty.
+movies_data = movies_data[movies_data['description'].notna()]
+
 # edit id column to be autoincrement integers
 movies_data['id']= pd.Series(range(1,movies_data.shape[0]+1))
 
