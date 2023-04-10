@@ -142,6 +142,7 @@ def w2v_recommendation_system_test(test_data_size = 10):
     for description in movies_data.head(test_data_size)["description"].values:
         test_description = description
         query_terms = extract_query_terms([test_description])
+        movies_data.loc[movies_data["description"] == test_description, "query_terms"] = ', '.join(query_terms)
 
         ranking = generate_ranking(query_terms, movies_data, kmeans, top_n=1)
         print(ranking[["title", "score"]])
