@@ -24,8 +24,8 @@ stop_words = set(stopwords.words("english"))
 lemmatizer = WordNetLemmatizer()
 
 # Load pretrained bert model
-tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/distilbert-base-nli-mean-tokens")
-bert_model = AutoModel.from_pretrained("sentence-transformers/distilbert-base-nli-mean-tokens")
+tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
+bert_model = AutoModel.from_pretrained("sentence-transformers/all-MiniLM-L6-v2")
 
 # method that checks if a given description contains more than just digits, punctuation and stop words
 # description is consider meaningful if true 
@@ -172,6 +172,6 @@ def rs_multiple_tests():
     
     # If you want to check the intermediate outputs of all 5 steps and the precision, you can output movies_data to csv
     # Uncomment the line below to export to csv
-    # movies_data.to_csv("movies_data_bert.csv")
+    # movies_data.to_csv("movies_data_bert_results.csv")
 
 rs_multiple_tests()
