@@ -176,6 +176,6 @@ def rs_multiple_tests():
     
     # If you want to check the intermediate outputs of all 5 steps and the precision, you can output movies_data to csv
     # Uncomment the line below to export to csv
-    # movies_data.to_csv("movies_data_w2v.csv")
+    # movies_data.to_csv("movies_data_w2v_results.csv")
 
 rs_multiple_tests()
