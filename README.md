@@ -1,5 +1,6 @@
 # MovieRec
-https://towardsdatascience.com/text-preprocessing-with-nltk-9de5de891658 
+Two movie recommendation systems using text embeddings based approach. Built for CPSC 571 final project.
+Name - Hrithvik Gadhiya | UCID - 30078764
 
 # Deps
 To install dependencies:
