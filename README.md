@@ -1,6 +1,5 @@
 # MovieRec
-Two movie recommendation systems using text embeddings based approach. Built for CPSC 571 final project.
-Name - Hrithvik Gadhiya | UCID - 30078764
+Two movie recommendation systems using text embeddings based approach.
 
 # Deps
 To install dependencies:
